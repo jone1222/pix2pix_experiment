@@ -69,20 +69,25 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
     return net
 
 
-def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[]):
+def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropout=False, init_type='normal', init_gain=0.02, gpu_ids=[], stage=1, stage1_g=None):
     netG = None
     norm_layer = get_norm_layer(norm_type=norm)
 
-    if which_model_netG == 'resnet_9blocks':
-        netG = ResnetGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
-    elif which_model_netG == 'resnet_6blocks':
-        netG = ResnetGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
-    elif which_model_netG == 'unet_128':
-        netG = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
-    elif which_model_netG == 'unet_256':
-        netG = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+    if stage == 1:
+        if which_model_netG == 'resnet_9blocks':
+            netG = ResnetGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
+        elif which_model_netG == 'resnet_6blocks':
+            netG = ResnetGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
+        elif which_model_netG == 'unet_128':
+            netG = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        elif which_model_netG == 'unet_256':
+            netG = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        else:
+            raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
     else:
-        raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
+        netG = STAGE2_G
+
+
     return init_net(netG, init_type, init_gain, gpu_ids)
 
 
@@ -380,3 +385,26 @@ class PixelDiscriminator(nn.Module):
 
     def forward(self, input):
         return self.net(input)
+
+
+class STAGE2_G(nn.Module):
+    def __init__(self, input_nc, output_nc, num_downs,stage1_G,which_model_netG,ngf=64,
+                 norm_layer=nn.BatchNorm2d, use_dropout=False):
+        super(STAGE2_G, self).__init__()
+
+        self.stage1_G = stage1_G
+
+        self.model = self.stage1_G
+        if which_model_netG == 'resnet_9blocks':
+            self.model = ResnetGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=9)
+        elif which_model_netG == 'resnet_6blocks':
+            self.model = ResnetGenerator(input_nc, output_nc, ngf, norm_layer=norm_layer, use_dropout=use_dropout, n_blocks=6)
+        elif which_model_netG == 'unet_128':
+            self.model = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        elif which_model_netG == 'unet_256':
+            self.model = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout)
+        else:
+            raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
+
+    def forward(self, input):
+        return self.model(self.stage1_G(input))
