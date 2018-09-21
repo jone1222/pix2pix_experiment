@@ -2,6 +2,7 @@ import os.path
 import random
 import torchvision.transforms as transforms
 import torch
+import logging
 from data.base_dataset import BaseDataset
 from data.image_folder import make_dataset
 from PIL import Image
@@ -37,6 +38,22 @@ class AlignedDataset(BaseDataset):
         A = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(A)
         B = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(B)
 
+        #half sized image
+        loadSize_2 = int(round(self.opt.loadSize / 2))
+        fineSize_2 = int(round(self.opt.fineSize / 2))
+        A_2 = AB.crop((0, 0, w2, h)).resize((loadSize_2, loadSize_2), Image.BICUBIC)
+        B_2 = AB.crop((w2, 0, w, h)).resize((loadSize_2, loadSize_2), Image.BICUBIC)
+        A_2 = transforms.ToTensor()(A_2)
+        B_2 = transforms.ToTensor()(B_2)
+        w_offset_2 = random.randint(0, max(0, loadSize_2 - fineSize_2 - 1))
+        h_offset_2 = random.randint(0, max(0, loadSize_2 - fineSize_2 - 1))
+
+        A_2 = A_2[:, h_offset_2:h_offset_2 + fineSize_2, w_offset_2:w_offset_2 + fineSize_2]
+        B_2 = B_2[:, h_offset_2:h_offset_2 + fineSize_2, w_offset_2:w_offset_2 + fineSize_2]
+
+        A_2 = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(A_2)
+        B_2 = transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))(B_2)
+
         if self.opt.which_direction == 'BtoA':
             input_nc = self.opt.output_nc
             output_nc = self.opt.input_nc
@@ -50,15 +67,24 @@ class AlignedDataset(BaseDataset):
             A = A.index_select(2, idx)
             B = B.index_select(2, idx)
 
+            idx_2 = [i for i in range(A_2.size(2) - 1, -1, -1)]
+            idx_2 = torch.LongTensor(idx_2)
+            A_2 = A_2.index_select(2, idx_2)
+            B_2 = B_2.index_select(2, idx_2)
+
         if input_nc == 1:  # RGB to gray
             tmp = A[0, ...] * 0.299 + A[1, ...] * 0.587 + A[2, ...] * 0.114
             A = tmp.unsqueeze(0)
+            tmp_2 = A_2[0, ...] * 0.299 + A_2[1, ...] * 0.587 + A_2[2, ...] * 0.114
+            A_2 = tmp_2.unsqueeze(0)
 
         if output_nc == 1:  # RGB to gray
             tmp = B[0, ...] * 0.299 + B[1, ...] * 0.587 + B[2, ...] * 0.114
             B = tmp.unsqueeze(0)
+            tmp_2 = B_2[0, ...] * 0.299 + B_2[1, ...] * 0.587 + B_2[2, ...] * 0.114
+            B_2 = tmp_2.unsqueeze(0)
 
-        return {'A': A, 'B': B,
+        return {'A': A, 'B': B, 'A_2' : A_2, 'B_2' : B_2,
                 'A_paths': AB_path, 'B_paths': AB_path}
 
     def __len__(self):

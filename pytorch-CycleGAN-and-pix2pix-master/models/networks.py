@@ -85,7 +85,7 @@ def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropo
         else:
             raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
     else:
-        netG = STAGE2_G
+        netG = STAGE2_G(stage1_g)
 
 
     return init_net(netG, init_type, init_gain, gpu_ids)
@@ -388,7 +388,7 @@ class PixelDiscriminator(nn.Module):
 
 
 class STAGE2_G(nn.Module):
-    def __init__(self, input_nc, output_nc, num_downs,stage1_G,which_model_netG,ngf=64,
+    def __init__(self, input_nc, output_nc,stage1_G,which_model_netG,ngf=64,
                  norm_layer=nn.BatchNorm2d, use_dropout=False):
         super(STAGE2_G, self).__init__()
 
@@ -407,4 +407,8 @@ class STAGE2_G(nn.Module):
             raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
 
     def forward(self, input):
-        return self.model(self.stage1_G(input))
+        stage1_output = self.stage1_G(input)
+
+        #concat additional information if needed
+
+        return self.model(stage1_output)
