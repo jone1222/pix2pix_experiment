@@ -85,7 +85,7 @@ def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropo
         else:
             raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
     else:
-        netG = STAGE2_G(stage1_g)
+        netG = STAGE2_G(input_nc,output_nc,stage1_g,which_model_netG)
 
 
     return init_net(netG, init_type, init_gain, gpu_ids)
