@@ -242,8 +242,9 @@ class Pix2PixCustomModel(BaseModel):
         # specify the training losses you want to print out. The program will call base_model.get_current_losses
         self.loss_names = ['D_A', 'G_A', 'D_B', 'G_B', 'G_L1_A', 'G_L1_B']
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
-        visual_names_A = ['real_A', 'fake_B', 'rec_A']
-        visual_names_B = ['real_B', 'fake_A', 'rec_B']
+        #         self.visual_names = ['real_A', 'fake_B', 'real_B']
+        visual_names_A = ['real_A_2', 'fake_B_1', 'real_B_2']
+        visual_names_B = ['real_A', 'fake_B_2', 'real_B']
 
         self.visual_names = visual_names_A + visual_names_B
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
