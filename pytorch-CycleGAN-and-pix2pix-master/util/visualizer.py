@@ -78,11 +78,23 @@ class Visualizer():
                 label_html = ''
                 label_html_row = ''
                 images = []
+
+                #small images
+                small_images = []
+
                 idx = 0
                 for label, image in visuals.items():
                     image_numpy = util.tensor2im(image)
+
                     label_html_row += '<td>%s</td>' % label
-                    images.append(image_numpy.transpose([2, 0, 1]))
+
+                    transpose_image = image_numpy.transpose([2, 0, 1])
+
+                    if transpose_image.shape == (3,256,256):
+                        images.append(transpose_image)
+                    elif transpose_image.shape == (3,128,128):
+                        small_images.append(transpose_image)
+
                     idx += 1
                     if idx % ncols == 0:
                         label_html += '<tr>%s</tr>' % label_html_row
@@ -96,10 +108,11 @@ class Visualizer():
                     label_html += '<tr>%s</tr>' % label_html_row
                 # pane col = image row
                 try:
-                    self.vis.images(images, nrow=ncols, win=self.display_id + 1,
-                                    padding=2, opts=dict(title=title + ' images'))
+                    if(len(small_images) > 0):
+                        self.vis.images(small_images, nrow=ncols, win=self.display_id + 1,padding=2, opts=dict(title=title + ' small_images'))
+                    self.vis.images(images, nrow=ncols, win=self.display_id + 2, padding=2, opts=dict(title=title + ' images'))
                     label_html = '<table>%s</table>' % label_html
-                    self.vis.text(table_css + label_html, win=self.display_id + 2,
+                    self.vis.text(table_css + label_html, win=self.display_id + 3,
                                   opts=dict(title=title + ' labels'))
                 except ConnectionError:
                     self.throw_visdom_connection_error()

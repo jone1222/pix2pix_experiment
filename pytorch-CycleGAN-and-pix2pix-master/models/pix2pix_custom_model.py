@@ -296,6 +296,8 @@ class Pix2PixCustomModel(BaseModel):
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
 
+    def get_netG(self):
+        return self.netG_A,self.netG_B
     def set_input(self, input):
         AtoB = self.opt.which_direction == 'AtoB'
         self.real_A = input['A' if AtoB else 'B'].to(self.device)
@@ -311,7 +313,7 @@ class Pix2PixCustomModel(BaseModel):
 
         #concat fake_B1 with real_A if neeeded
 
-        self.fake_B_2 = self.netG_B(self.fake_B_1)
+        self.fake_B_2 = self.netG_B(self.real_A_2)
 
     def backward_D_basic(self, netD, real, fake):
         # Real
@@ -377,6 +379,13 @@ class Pix2PixCustomModel(BaseModel):
         self.backward_D_A()
         self.backward_D_B()
         self.optimizer_D.step()
+
+if __name__ == '__main__':
+    model = Pix2PixCustomModel()
+    x = torch.randn(3,256,256)
+    from torchviz import make_dot, make_dot_from_trace
+    g = make_dot(model(x))
+    g.view()
 
 #
 # class CycleGANModel(BaseModel):
