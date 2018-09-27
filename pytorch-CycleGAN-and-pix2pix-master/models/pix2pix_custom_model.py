@@ -341,7 +341,7 @@ class Pix2PixCustomModel(BaseModel):
         # First, G(A) should fake the discriminator
         fake_AB = torch.cat((self.real_A_2, self.fake_B_1), 1)
         pred_fake_A = self.netD_A(fake_AB)
-        self.loss_G_GAN_A = self.criterionGAN(pred_fake_A, True)
+        self.loss_G_A = self.criterionGAN(pred_fake_A, True)
 
 
         #upsample by 2 ( 128 x 128 --> 256 x 256 )
@@ -349,18 +349,18 @@ class Pix2PixCustomModel(BaseModel):
 
         fake_AB_2 = torch.cat((self.real_A, self.fake_B_2), 1)
         pred_fake_B = self.netD_B(fake_AB_2)
-        self.loss_G_GAN_B = self.criterionGAN(pred_fake_B, True)
+        self.loss_G_B = self.criterionGAN(pred_fake_B, True)
 
         # Second, G(A) = B
         self.loss_G_L1_A = self.criterionL1(self.fake_B_1, self.real_B_2) * self.opt.lambda_A
         self.loss_G_L1_B = self.criterionL1(self.fake_B_2, self.real_B) * self.opt.lambda_B
 
-        # self.loss_G_A = self.loss_G_GAN_A + self.loss_G_L1_A
-        # self.loss_G_B = self.loss_G_GAN_B + self.loss_G_L1_B
+        # self.loss_G_A = self.loss_G_A + self.loss_G_L1_A
+        # self.loss_G_B = self.loss_G_B + self.loss_G_L1_B
         #
         # self.loss_G_A.backward()
         # self.loss_G_B.backward()
-        self.loss_G = self.loss_G_GAN_A + self.loss_G_L1_A + self.loss_G_GAN_B + self.loss_G_L1_B
+        self.loss_G = self.loss_G_A + self.loss_G_L1_A + self.loss_G_B + self.loss_G_L1_B
         self.loss_G.backward()
 
     def optimize_parameters(self):

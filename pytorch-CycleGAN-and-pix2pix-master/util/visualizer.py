@@ -136,35 +136,89 @@ class Visualizer():
     # losses: dictionary of error labels and values
     def plot_current_losses(self, epoch, counter_ratio, opt, losses):
         if not hasattr(self, 'plot_data'):
-            self.plot_data = {'X': [], 'Y': [], 'X2' : [] , 'Y2' : [], 'legend': list(losses.keys())}
+            self.plot_data = {'X': [], 'Y': [],'Y2' : [],'Y3' : [],'Y4' : [], 'legend': list(losses.keys())}
         self.plot_data['X'].append(epoch + counter_ratio)
-        self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
+        # self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
 
         ##jsk##
-        self.plot_data['X2'].append(epoch + counter_ratio)
-        self.plot_data['Y2'].append([losses[k] for k in self.plot_data['legend'] if k != 'G_L1'])
+        # self.plot_data['X2'].append(epoch + counter_ratio)
+        if('G_L1' in losses):
+            self.plot_data['Y'].append([losses[k] for k in self.plot_data['legend']])
+            self.plot_data['Y2'].append([losses[k] for k in self.plot_data['legend'] if k != 'G_L1'])
+        else:
+            self.plot_data['Y'].append([losses['G_L1_A']])
+            self.plot_data['Y2'].append([losses['G_L1_B']])
+            self.plot_data['Y3'].append([losses['G_A'],losses['D_A']])
+            self.plot_data['Y4'].append([losses['G_B'],losses['D_B']])
+
+
 
         try:
-            self.plot1 = self.vis.line(
-                X=np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1),
-                Y=np.array(self.plot_data['Y']),
-                opts={
-                    'title': self.name + ' loss over time',
-                    'legend': self.plot_data['legend'],
-                    'xlabel': 'epoch',
-                    'ylabel': 'loss'},
-                win=self.display_id)
+            if self.opt.model.find('custom') != -1:
+                self.plot1 = self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])], 1),
+                    Y=np.array(self.plot_data['Y']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': ['G_L1_A'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id)
 
-            ###jsk###
-            self.plot2 = self.vis.line(
-                X=np.stack([np.array(self.plot_data['X2'])] * (len(self.plot_data['legend'])-1), 1),
-                Y=np.array(self.plot_data['Y2']),
-                opts={
-                    'title': self.name + ' loss over time__GAN',
-                    'legend': [k for k in self.plot_data['legend'] if k != 'G_L1'],
-                    'xlabel': 'epoch',
-                    'ylabel': 'loss'},
-                win=self.display_id+99)
+                self.plot2 = self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])], 1),
+                    Y=np.array(self.plot_data['Y2']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': ['G_L1_B'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id + 99)
+
+                self.plot3 = self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])] * 2, 1),
+                    Y=np.array(self.plot_data['Y3']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': ['G_A','D_A'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id + 98)
+                self.plot4 = self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])] * 2, 1),
+                    Y=np.array(self.plot_data['Y4']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': ['G_B','D_B'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id + 97)
+            else:
+                self.plot1 = self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])] * len(self.plot_data['legend']), 1),
+                    Y=np.array(self.plot_data['Y']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': self.plot_data['legend'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id)
+
+                ###jsk###
+                self.plot2 = self.vis.line(
+                    X=np.stack([np.array(self.plot_data['X'])] * (len(self.plot_data['legend'])-1), 1),
+                    Y=np.array(self.plot_data['Y2']),
+                    opts={
+                        'title': self.name + ' loss over time',
+                        'legend': [k for k in self.plot_data['legend'] if k != 'G_L1'],
+                        'xlabel': 'epoch',
+                        'ylabel': 'loss'},
+                    win=self.display_id+99)
+
+
+
+
+
         except ConnectionError:
             self.throw_visdom_connection_error()
 
