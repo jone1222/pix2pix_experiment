@@ -244,7 +244,8 @@ class Pix2PixCustomModel(BaseModel):
         # specify the images you want to save/display. The program will call base_model.get_current_visuals
         #         self.visual_names = ['real_A', 'fake_B', 'real_B']
         visual_names_A = ['real_A_2', 'fake_B_1', 'real_B_2']
-        visual_names_B = ['real_A', 'fake_B_2', 'real_B']
+        visual_names_B = ['fake_B_1_up', 'fake_B_2', 'real_B']
+        # visual_names_B = ['real_A', 'fake_B_2', 'real_B']
 
         self.visual_names = visual_names_A + visual_names_B
         # specify the models you want to save to the disk. The program will call base_model.save_networks and base_model.load_networks
@@ -259,8 +260,13 @@ class Pix2PixCustomModel(BaseModel):
         self.netG_A = networks.define_G(opt.input_nc, opt.output_nc,
                                         opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
 
-        self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
-                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids,stage=2,stage1_g=self.netG_A)
+        # self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
+        #                                 opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+
+        self.netG_B = networks.define_G(opt.output_nc+opt.input_nc,opt.input_nc,
+                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, opt.init_type, opt.init_gain, self.gpu_ids)
+
+
 
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
@@ -311,9 +317,13 @@ class Pix2PixCustomModel(BaseModel):
         #fake B_1 = first generated image  -- res / origin /2
         self.fake_B_1 = self.netG_A(self.real_A_2)
 
+        self.fake_B_1_up = interpolate(self.fake_B_1,scale_factor=2)
         #concat fake_B1 with real_A if neeeded
+        self.fake_AB_1 = torch.cat((self.fake_B_1_up,self.real_A),1)
 
-        self.fake_B_2 = self.netG_B(self.real_A_2)
+        # self.fake_B_2 = self.netG_B(self.fake_B_1_up)
+
+        self.fake_B_2 = self.netG_B(self.fake_AB_1)
 
     def backward_D_basic(self, netD, real, fake):
         # Real
@@ -347,8 +357,8 @@ class Pix2PixCustomModel(BaseModel):
 
 
         #upsample by 2 ( 128 x 128 --> 256 x 256 )
-        self.fake_B_2 = interpolate(self.fake_B_2,scale_factor=2)
-
+        # self.fake_B_2 = interpolate(self.fake_B_2,scale_factor=2)
+        #
         fake_AB_2 = torch.cat((self.real_A, self.fake_B_2), 1)
         pred_fake_B = self.netD_B(fake_AB_2)
         self.loss_G_B = self.criterionGAN(pred_fake_B, True)
